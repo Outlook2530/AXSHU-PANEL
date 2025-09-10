@@ -11,16 +11,19 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # ----------------- Storage Helpers -----------------
 def save_sessions(data):
-    with open(LOG_FILE, "w") as f:
-        json.dump(data, f, indent=2)
+    try:
+        with open(LOG_FILE, "w") as f:
+            json.dump(data, f, indent=2)
+    except:
+        pass
 
 def load_sessions():
     if os.path.exists(LOG_FILE):
-        with open(LOG_FILE, "r") as f:
-            try:
+        try:
+            with open(LOG_FILE, "r") as f:
                 return json.load(f)
-            except:
-                return {}
+        except:
+            return {}
     return {}
 
 # ----------------- Layout Template -----------------
@@ -34,44 +37,16 @@ layout_template = """
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/particles.js"></script>
   <style>
-    body {
-      margin:0; padding:0;
-      font-family: 'Segoe UI', sans-serif;
-      min-height:100vh;
-      display:flex; flex-direction:column;
-    }
-    /* Background */
+    body { margin:0; padding:0; font-family:'Segoe UI', sans-serif; min-height:100vh; display:flex; flex-direction:column; }
     #particles-js { position:fixed; width:100%; height:100%; z-index:-1; }
     .content-wrapper { flex:1; display:flex; justify-content:center; align-items:center; padding:30px; }
-    /* Navbar */
-    .navbar-glass {
-      background: rgba(0,0,0,0.4);
-      backdrop-filter: blur(12px);
-    }
-    /* Panel */
-    .panel-box {
-      width:100%; max-width:1000px;
-      background: rgba(0,0,0,0.75);
-      padding:30px;
-      border-radius:20px;
-      box-shadow:0 0 25px rgba(0,0,0,0.6);
-      color:white;
-    }
+    .navbar-glass { background: rgba(0,0,0,0.4); backdrop-filter: blur(12px); }
+    .panel-box { width:100%; max-width:1000px; background: rgba(0,0,0,0.75); padding:30px; border-radius:20px; box-shadow:0 0 25px rgba(0,0,0,0.6); color:white; }
     h3 { text-align:center; margin-bottom:20px; color:#00ffff; font-weight:bold; }
-    /* Footer */
-    footer {
-      text-align:center;
-      padding:15px;
-      background: rgba(0,0,0,0.4);
-      backdrop-filter: blur(10px);
-      color:white;
-      font-size:14px;
-    }
-    /* Theme */
+    footer { text-align:center; padding:15px; background: rgba(0,0,0,0.4); backdrop-filter: blur(10px); color:white; font-size:14px; }
     body.light { background:#f5f5f5; color:#222; }
     body.light .panel-box { background: rgba(255,255,255,0.9); color:#000; }
     body.light h3 { color:#007bff; }
-    /* Toasts */
     .toast-container { position:fixed; top:20px; right:20px; z-index:2000; }
   </style>
 </head>
@@ -106,7 +81,7 @@ layout_template = """
   <div class="toast-container">
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% for category, msg in messages %}
-      <div class="toast align-items-center text-bg-{{category}} border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="toast align-items-center text-bg-{{category}} border-0 mb-2" role="alert">
         <div class="d-flex">
           <div class="toast-body">{{msg}}</div>
           <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
@@ -130,7 +105,7 @@ layout_template = """
     document.querySelectorAll('.toast').forEach(toastEl => {
       new bootstrap.Toast(toastEl, {delay:5000}).show();
     });
-    // Particles.js config
+    // Particles.js
     particlesJS("particles-js", {
       "particles": { "number": { "value": 80 }, "size": { "value": 3 },
         "move": { "speed": 2 }, "line_linked": { "enable": true } }
@@ -201,15 +176,33 @@ def user_panel():
         layout_template + """
 {% block content %}
   <h3>User Panel</h3>
-  <div class="mb-3"><b>Token:</b> {{data['token'][:4]}}****{{data['token'][-4:]}}</div>
-  <div class="mb-3"><b>Thread ID:</b> {{data['threadId']}}</div>
-  <div class="mb-3"><b>Prefix:</b> {{data['prefix']}}</div>
-  <div class="mb-3"><b>Interval:</b> {{data['interval']}} seconds</div>
-  <div class="mb-3"><b>File:</b> {{data['file']}} {% if data['file'] %}<a class="btn btn-sm btn-light ms-2" href="/uploads/{{data['file']}}" download>Download</a>{% endif %}</div>
-  <div class="mb-3"><b>Status:</b> <span class="text-success fw-bold">{{data['status']}}</span></div>
+  <div class="mb-3"><b>Token:</b> {{data.get('token','')[:4]}}****{{data.get('token','')[-4:]}}</div>
+  <div class="mb-3"><b>Thread ID:</b> {{data.get('threadId','')}}</div>
+  <div class="mb-3"><b>Prefix:</b> {{data.get('prefix','')}}</div>
+  <div class="mb-3"><b>Interval:</b> {{data.get('interval','')}} seconds</div>
+  <div class="mb-3"><b>File:</b> {{data.get('file','')}} {% if data.get('file') %}<a class="btn btn-sm btn-light ms-2" href="/uploads/{{data.get('file')}}" download>Download</a>{% endif %}</div>
+  <div class="mb-3"><b>Status:</b> <span id="status" class="text-success fw-bold">{{data.get('status','Unknown')}}</span></div>
   <a href="/" class="btn btn-primary w-100">⬅️ Back</a>
+
+  <script>
+    setInterval(()=>{
+      fetch("/status").then(r=>r.json()).then(res=>{
+        if(res.status){
+          document.getElementById("status").innerText = res.status;
+        }
+      });
+    }, 5000);
+  </script>
 {% endblock %}
 """, title="User Panel", data=data)
+
+# ----------------- Live Status Route -----------------
+@app.route("/status")
+def status():
+    session_id = session.get("session_id")
+    sessions = load_sessions()
+    data = sessions.get(session_id, {})
+    return jsonify({"status": data.get("status", "Unknown")})
 
 # ----------------- Admin Login -----------------
 @app.route("/admin/login", methods=["GET", "POST"])
@@ -253,14 +246,14 @@ def admin_panel():
         </tr>
       </thead>
       <tbody>
-        {% for sid, data in sessions.items() %}
+        {% for sid, d in sessions.items() %}
         <tr>
           <td>{{sid}}</td>
-          <td>{{data['threadId']}}</td>
-          <td>{{data['prefix']}}</td>
-          <td>{{data['interval']}}</td>
-          <td>{{data['file']}}</td>
-          <td>{{data['status']}}</td>
+          <td>{{d.get('threadId','')}}</td>
+          <td>{{d.get('prefix','')}}</td>
+          <td>{{d.get('interval','')}}</td>
+          <td>{{d.get('file','')}}</td>
+          <td>{{d.get('status','Unknown')}}</td>
           <td><a href="/admin/delete/{{sid}}" class="btn btn-danger btn-sm">Delete</a></td>
         </tr>
         {% endfor %}
