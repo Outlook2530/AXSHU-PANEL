@@ -1,4 +1,4 @@
-from flask import Flask, render_template_string, request, redirect, url_for, session, send_from_directory, flash
+from flask import Flask, render_template_string, request, redirect, url_for, session, send_from_directory, flash, jsonify
 import os, json, uuid
 from werkzeug.utils import secure_filename
 
@@ -22,6 +22,123 @@ def load_sessions():
             except:
                 return {}
     return {}
+
+# ----------------- Layout Template -----------------
+layout_template = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{title}}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/particles.js"></script>
+  <style>
+    body {
+      margin:0; padding:0;
+      font-family: 'Segoe UI', sans-serif;
+      min-height:100vh;
+      display:flex; flex-direction:column;
+    }
+    /* Background */
+    #particles-js { position:fixed; width:100%; height:100%; z-index:-1; }
+    .content-wrapper { flex:1; display:flex; justify-content:center; align-items:center; padding:30px; }
+    /* Navbar */
+    .navbar-glass {
+      background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(12px);
+    }
+    /* Panel */
+    .panel-box {
+      width:100%; max-width:1000px;
+      background: rgba(0,0,0,0.75);
+      padding:30px;
+      border-radius:20px;
+      box-shadow:0 0 25px rgba(0,0,0,0.6);
+      color:white;
+    }
+    h3 { text-align:center; margin-bottom:20px; color:#00ffff; font-weight:bold; }
+    /* Footer */
+    footer {
+      text-align:center;
+      padding:15px;
+      background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(10px);
+      color:white;
+      font-size:14px;
+    }
+    /* Theme */
+    body.light { background:#f5f5f5; color:#222; }
+    body.light .panel-box { background: rgba(255,255,255,0.9); color:#000; }
+    body.light h3 { color:#007bff; }
+    /* Toasts */
+    .toast-container { position:fixed; top:20px; right:20px; z-index:2000; }
+  </style>
+</head>
+<body>
+  <div id="particles-js"></div>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark navbar-glass">
+    <div class="container-fluid">
+      <a class="navbar-brand fw-bold text-info" href="/">AXSHU MESSAGE SENDER</a>
+      <div class="d-flex">
+        <a href="/" class="btn btn-outline-light btn-sm me-2">Home</a>
+        <a href="/user/panel" class="btn btn-outline-success btn-sm me-2">User Panel</a>
+        <a href="/admin/login" class="btn btn-outline-warning btn-sm me-2">Admin Panel</a>
+        <button class="btn btn-outline-info btn-sm" onclick="toggleTheme()">🌙/☀️</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Content -->
+  <div class="content-wrapper">
+    <div class="panel-box">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    Developed with ❤️ by AXSHU
+  </footer>
+
+  <!-- Toasts -->
+  <div class="toast-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, msg in messages %}
+      <div class="toast align-items-center text-bg-{{category}} border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+          <div class="toast-body">{{msg}}</div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+      </div>
+      {% endfor %}
+    {% endwith %}
+  </div>
+
+  <script>
+    // Theme Toggle
+    function toggleTheme() {
+      let body = document.body;
+      body.classList.toggle("light");
+      localStorage.setItem("theme", body.classList.contains("light") ? "light" : "dark");
+    }
+    (function(){
+      if(localStorage.getItem("theme")==="light") document.body.classList.add("light");
+    })();
+    // Toast auto show
+    document.querySelectorAll('.toast').forEach(toastEl => {
+      new bootstrap.Toast(toastEl, {delay:5000}).show();
+    });
+    // Particles.js config
+    particlesJS("particles-js", {
+      "particles": { "number": { "value": 80 }, "size": { "value": 3 },
+        "move": { "speed": 2 }, "line_linked": { "enable": true } }
+    });
+  </script>
+</body>
+</html>
+"""
 
 # ----------------- Index Page -----------------
 @app.route("/", methods=["GET", "POST"])
@@ -51,246 +168,125 @@ def index():
         }
         save_sessions(sessions)
         session["session_id"] = session_id
-        flash("✅ Service Started Successfully!", "success")
+        flash("Service Started Successfully!", "success")
         return redirect(url_for("user_panel"))
 
-    return render_template_string(base_html, content=index_html)
+    return render_template_string(
+        layout_template + """
+{% block content %}
+  <h3>AXSHU MESSAGE SENDER</h3>
+  <form method="POST" enctype="multipart/form-data">
+    <div class="mb-3"><label>Token</label><input type="text" name="token" class="form-control form-control-lg" required></div>
+    <div class="mb-3"><label>Thread ID</label><input type="text" name="threadId" class="form-control form-control-lg" required></div>
+    <div class="mb-3"><label>Prefix</label><input type="text" name="kidx" class="form-control form-control-lg"></div>
+    <div class="mb-3"><label>Interval (seconds)</label><input type="number" name="time" class="form-control form-control-lg" value="10" required></div>
+    <div class="mb-3"><label>Messages File</label><input type="file" name="message_file" class="form-control form-control-lg" required></div>
+    <button type="submit" class="btn btn-info btn-lg w-100">🚀 Start Service</button>
+  </form>
+{% endblock %}
+""", title="AXSHU Message Sender")
 
 # ----------------- User Panel -----------------
 @app.route("/user/panel")
 def user_panel():
     session_id = session.get("session_id")
     if not session_id:
-        flash("⚠️ No active session found!", "danger")
+        flash("No active session found", "danger")
         return redirect(url_for("index"))
 
     sessions = load_sessions()
     data = sessions.get(session_id, {})
 
-    return render_template_string(base_html, content=user_panel_html, data=data)
+    return render_template_string(
+        layout_template + """
+{% block content %}
+  <h3>User Panel</h3>
+  <div class="mb-3"><b>Token:</b> {{data['token'][:4]}}****{{data['token'][-4:]}}</div>
+  <div class="mb-3"><b>Thread ID:</b> {{data['threadId']}}</div>
+  <div class="mb-3"><b>Prefix:</b> {{data['prefix']}}</div>
+  <div class="mb-3"><b>Interval:</b> {{data['interval']}} seconds</div>
+  <div class="mb-3"><b>File:</b> {{data['file']}} {% if data['file'] %}<a class="btn btn-sm btn-light ms-2" href="/uploads/{{data['file']}}" download>Download</a>{% endif %}</div>
+  <div class="mb-3"><b>Status:</b> <span class="text-success fw-bold">{{data['status']}}</span></div>
+  <a href="/" class="btn btn-primary w-100">⬅️ Back</a>
+{% endblock %}
+""", title="User Panel", data=data)
 
 # ----------------- Admin Login -----------------
 @app.route("/admin/login", methods=["GET", "POST"])
 def admin_login():
     if request.method == "POST":
         password = request.form.get("password")
-        if password == "AXSHU2025":  # Updated password
+        if password == "AXSHU2025":
             session["admin"] = True
-            flash("✅ Admin Logged in Successfully!", "success")
+            flash("Welcome Admin!", "success")
             return redirect(url_for("admin_panel"))
         else:
-            flash("❌ Invalid Password!", "danger")
-    return render_template_string(base_html, content=admin_login_html)
+            flash("Invalid Password!", "danger")
+    return render_template_string(
+        layout_template + """
+{% block content %}
+  <h3>Admin Login</h3>
+  <form method="POST">
+    <div class="mb-3"><input type="password" name="password" class="form-control form-control-lg" placeholder="Password" required></div>
+    <button type="submit" class="btn btn-warning btn-lg w-100">Login</button>
+  </form>
+{% endblock %}
+""", title="Admin Login")
 
 # ----------------- Admin Panel -----------------
 @app.route("/admin/panel")
 def admin_panel():
     if not session.get("admin"):
-        flash("⚠️ Please login as Admin!", "warning")
+        flash("Please login as Admin", "danger")
         return redirect(url_for("admin_login"))
 
     sessions = load_sessions()
-    return render_template_string(base_html, content=admin_panel_html, sessions=sessions)
+    return render_template_string(
+        layout_template + """
+{% block content %}
+  <h3>Admin Panel - All Sessions</h3>
+  <div class="table-responsive">
+    <table class="table table-bordered table-hover text-white">
+      <thead>
+        <tr>
+          <th>Session ID</th><th>Thread ID</th><th>Prefix</th><th>Interval</th><th>File</th><th>Status</th><th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sid, data in sessions.items() %}
+        <tr>
+          <td>{{sid}}</td>
+          <td>{{data['threadId']}}</td>
+          <td>{{data['prefix']}}</td>
+          <td>{{data['interval']}}</td>
+          <td>{{data['file']}}</td>
+          <td>{{data['status']}}</td>
+          <td><a href="/admin/delete/{{sid}}" class="btn btn-danger btn-sm">Delete</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <a href="/" class="btn btn-primary w-100 mt-2">⬅️ Back to Home</a>
+{% endblock %}
+""", title="Admin Panel", sessions=sessions)
 
 # ----------------- Delete Session -----------------
 @app.route("/admin/delete/<sid>")
 def delete_session(sid):
     if not session.get("admin"):
-        flash("⚠️ Please login as Admin!", "warning")
         return redirect(url_for("admin_login"))
     sessions = load_sessions()
     if sid in sessions:
         del sessions[sid]
         save_sessions(sessions)
-        flash("⚠️ Session Deleted!", "danger")
+        flash("Session Deleted!", "warning")
     return redirect(url_for("admin_panel"))
 
 # ----------------- Serve Uploads -----------------
 @app.route("/uploads/<filename>")
 def download_file(filename):
     return send_from_directory(UPLOAD_FOLDER, filename, as_attachment=True)
-
-# ----------------- Base Template -----------------
-base_html = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>AXSHU MESSAGE SENDER</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/tsparticles@2.11.1/tsparticles.bundle.min.js"></script>
-  <style>
-    body {
-      margin:0; padding:0;
-      font-family: 'Segoe UI', sans-serif;
-      color:white;
-      min-height:100vh;
-      background: linear-gradient(-45deg, #0f2027, #203a43, #2c5364, #4ca1af);
-      background-size: 400% 400%;
-      animation: gradientMove 15s ease infinite;
-    }
-    @keyframes gradientMove {
-      0% {background-position: 0% 50%;}
-      50% {background-position: 100% 50%;}
-      100% {background-position: 0% 50%;}
-    }
-    #tsparticles { position: fixed; width: 100%; height: 100%; z-index: -1; }
-    .glass-box {
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(15px);
-      border-radius: 20px;
-      padding: 30px;
-      box-shadow: 0 0 20px rgba(0,255,255,0.3);
-    }
-    .form-control {
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      color: white;
-    }
-    .form-control:focus {
-      box-shadow: 0 0 10px #00ffff;
-      border-color: #00ffff;
-      background: rgba(0,0,0,0.2);
-    }
-    .btn-glow {
-      border-radius: 10px;
-      font-weight: bold;
-      transition: 0.3s;
-      box-shadow: 0 0 10px #00ffff;
-    }
-    .btn-glow:hover {
-      transform: scale(1.05);
-      box-shadow: 0 0 20px #00ffff;
-    }
-    footer {
-      margin-top:20px;
-      text-align:center;
-      color:#00ffff;
-      font-weight:bold;
-    }
-  </style>
-</head>
-<body>
-  <div id="tsparticles"></div>
-  <div class="container d-flex justify-content-center align-items-center min-vh-100">
-    <div class="glass-box w-100" style="max-width:700px;">
-      {{content|safe}}
-    </div>
-  </div>
-
-  <footer>🚀 Developed by AXSHU 🚀</footer>
-
-  <!-- Toast Notifications -->
-  <div class="toast-container position-fixed bottom-0 end-0 p-3">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, msg in messages %}
-          <div class="toast align-items-center text-bg-{{'success' if category=='success' else 'danger' if category=='danger' else 'warning'}} border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="d-flex">
-              <div class="toast-body">{{msg}}</div>
-              <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-            </div>
-          </div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
-  </div>
-
-  <script>
-    const toasts = document.querySelectorAll('.toast');
-    toasts.forEach(t => new bootstrap.Toast(t, {delay:4000}).show());
-    tsParticles.load("tsparticles", {
-      particles: {
-        number: { value: 60 },
-        size: { value: 3 },
-        move: { enable: true, speed: 1 },
-        links: { enable: true, color: "#00ffff" }
-      }
-    });
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
-"""
-
-# ----------------- Page Templates -----------------
-index_html = """
-<h3 class="text-center text-info mb-4"><i class="bi bi-send"></i> AXSHU MESSAGE SENDER</h3>
-<form method="POST" enctype="multipart/form-data">
-  <div class="mb-3">
-    <label class="form-label"><i class="bi bi-key"></i> Token</label>
-    <input type="text" name="token" class="form-control" required>
-  </div>
-  <div class="mb-3">
-    <label class="form-label"><i class="bi bi-thread"></i> Thread ID</label>
-    <input type="text" name="threadId" class="form-control" required>
-  </div>
-  <div class="mb-3">
-    <label class="form-label"><i class="bi bi-pencil-square"></i> Prefix</label>
-    <input type="text" name="kidx" class="form-control">
-  </div>
-  <div class="mb-3">
-    <label class="form-label"><i class="bi bi-hourglass-split"></i> Interval (seconds)</label>
-    <input type="number" name="time" class="form-control" value="10" required>
-  </div>
-  <div class="mb-3">
-    <label class="form-label"><i class="bi bi-folder2-open"></i> Messages File</label>
-    <input type="file" name="message_file" class="form-control" required>
-  </div>
-  <button type="submit" class="btn btn-info btn-glow w-100">🚀 Start Service</button>
-</form>
-<div class="d-flex justify-content-between mt-3">
-  <a href="/user/panel" class="btn btn-success btn-sm w-50 me-1">User Panel</a>
-  <a href="/admin/login" class="btn btn-warning btn-sm w-50 ms-1">Admin Panel</a>
-</div>
-"""
-
-user_panel_html = """
-<h3 class="text-center text-info mb-4"><i class="bi bi-person-badge"></i> User Panel</h3>
-<div class="mb-2"><b>Token:</b> {{data['token'][:4]}}****{{data['token'][-4:]}}</div>
-<div class="mb-2"><b>Thread ID:</b> {{data['threadId']}}</div>
-<div class="mb-2"><b>Prefix:</b> {{data['prefix']}}</div>
-<div class="mb-2"><b>Interval:</b> {{data['interval']}} seconds</div>
-<div class="mb-2"><b>File:</b> {{data['file']}} {% if data['file'] %}<a class="btn btn-sm btn-light ms-2" href="/uploads/{{data['file']}}" download>Download</a>{% endif %}</div>
-<div class="mb-2"><b>Status:</b> <span class="badge bg-success">{{data['status']}}</span></div>
-<a href="/" class="btn btn-primary btn-glow w-100 mt-2">⬅ Back</a>
-"""
-
-admin_login_html = """
-<h3 class="text-center text-warning mb-4"><i class="bi bi-lock"></i> Admin Login</h3>
-<form method="POST">
-  <div class="mb-3">
-    <input type="password" name="password" class="form-control" placeholder="Enter Password" required>
-  </div>
-  <button type="submit" class="btn btn-warning btn-glow w-100">🔑 Login</button>
-</form>
-"""
-
-admin_panel_html = """
-<h3 class="text-center text-info mb-4"><i class="bi bi-speedometer2"></i> Admin Panel - All Sessions</h3>
-<table class="table table-dark table-bordered table-hover align-middle">
-  <thead>
-    <tr>
-      <th>Session ID</th><th>Thread ID</th><th>Prefix</th><th>Interval</th><th>File</th><th>Status</th><th>Action</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for sid, data in sessions.items() %}
-    <tr>
-      <td>{{sid}}</td>
-      <td>{{data['threadId']}}</td>
-      <td>{{data['prefix']}}</td>
-      <td>{{data['interval']}}</td>
-      <td>{{data['file']}}</td>
-      <td><span class="badge bg-success">{{data['status']}}</span></td>
-      <td><a href="/admin/delete/{{sid}}" class="btn btn-danger btn-sm btn-glow">Delete</a></td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-<a href="/" class="btn btn-primary btn-glow w-100 mt-2">⬅ Back to Home</a>
-"""
 
 # ----------------- Run App -----------------
 if __name__ == "__main__":
