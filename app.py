@@ -1,4 +1,4 @@
-from flask import Flask, render_template_string, request, redirect, url_for, session, send_from_directory
+from flask import Flask, render_template_string, request, redirect, url_for, session, send_from_directory, flash
 import os, json, uuid
 from werkzeug.utils import secure_filename
 
@@ -22,6 +22,96 @@ def load_sessions():
             except:
                 return {}
     return {}
+
+# ----------------- Common Layout -----------------
+def base_html(content, title="AXSHU MESSAGE SENDER"):
+    return f"""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{title}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    body, html {{
+      margin:0; padding:0; height:100%; width:100%;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color:white;
+      transition: background 0.5s ease;
+    }}
+    .glass {{
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      padding:30px;
+    }}
+    nav {{
+      width:100%;
+      background: rgba(0,0,0,0.8);
+      padding:15px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      position:fixed; top:0; left:0; z-index:1000;
+      box-shadow:0 2px 10px rgba(0,0,0,0.5);
+    }}
+    nav a {{
+      color:#00ffff; margin:0 10px; text-decoration:none; font-weight:bold;
+    }}
+    nav a:hover {{ color:#fff; }}
+    .toggle-btn {{
+      cursor:pointer; font-size:20px; color:#fff;
+    }}
+    footer {{
+      text-align:center; padding:10px; color:#ccc; font-size:14px; margin-top:20px;
+    }}
+    .btn-custom {{ border-radius:10px; font-weight:bold; transition:0.3s; }}
+    .btn-custom:hover {{ transform:scale(1.05); }}
+  </style>
+  <script>
+    function toggleTheme() {{
+      let body = document.body;
+      if(body.dataset.theme === "light") {{
+        body.dataset.theme = "dark";
+        body.style.background = "linear-gradient(135deg, #0f2027, #203a43, #2c5364)";
+      }} else {{
+        body.dataset.theme = "light";
+        body.style.background = "linear-gradient(135deg, #ece9e6, #ffffff)";
+      }}
+    }}
+    function showToast(msg, type="success") {{
+      Swal.fire({{
+        toast:true,
+        position:"top-end",
+        showConfirmButton:false,
+        timer:3000,
+        icon:type,
+        title:msg
+      }});
+    }}
+  </script>
+</head>
+<body>
+  <nav>
+    <div><i class="bi bi-lightning-charge-fill"></i> AXSHU MESSAGE SENDER</div>
+    <div>
+      <a href="/">Home</a>
+      <a href="/user/panel">User Panel</a>
+      <a href="/admin/login">Admin Panel</a>
+      <span class="toggle-btn" onclick="toggleTheme()"><i class="bi bi-brightness-high"></i></span>
+    </div>
+  </nav>
+  <div class="container" style="padding-top:100px; min-height:80vh;">
+    {content}
+  </div>
+  <footer>© 2025 AXSHU | Developed with ❤️ by AXSHU</footer>
+</body>
+</html>
+"""
 
 # ----------------- Index Page -----------------
 @app.route("/", methods=["GET", "POST"])
@@ -53,99 +143,20 @@ def index():
         session["session_id"] = session_id
         return redirect(url_for("user_panel"))
 
-    return render_template_string("""
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>AXSHU MESSAGE SENDER</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body, html {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      width: 100%;
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-      color: white;
-    }
-    header {
-      width: 100%;
-      padding: 15px;
-      text-align: center;
-      background: rgba(0,0,0,0.9);
-      color: #00ffff;
-      font-size: 22px;
-      font-weight: bold;
-      position: fixed;
-      top: 0;
-      left: 0;
-      z-index: 999;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-    }
-    header small {
-      display: block;
-      font-size: 14px;
-      color: #fff;
-      margin-top: 5px;
-      font-weight: normal;
-    }
-    .form-box {
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.8);
-      padding: 50px;
-      box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-    h3 { text-align:center; margin-bottom:30px; color: #00ffff; font-weight:bold; font-size:28px; }
-    .btn-custom { font-weight:bold; border-radius:10px; transition:0.3s; }
-    .btn-custom:hover { transform:scale(1.05); }
-    .panel-links { margin-top:20px; display:flex; justify-content:space-between; }
-
-    /* Responsive Adjustments */
-    @media (max-width: 768px) {
-      .form-box { padding: 20px; }
-      h3 { font-size: 22px; margin-top: 40px; }
-      input, button, label { font-size: 16px; }
-      .btn-custom { font-size: 16px; padding: 12px; }
-    }
-
-    @media (max-width: 480px) {
-      h3 { font-size: 20px; margin-top: 50px; }
-      input, button, label { font-size: 14px; }
-      .btn-custom { font-size: 14px; padding: 10px; }
-      .panel-links { flex-direction: column; }
-      .panel-links a { width: 100% !important; margin: 5px 0; }
-    }
-  </style>
-</head>
-<body>
-  <header>
-    AXSHU MESSAGE SENDER
-    <small>Developed by AXSHU</small>
-  </header>
-  <div class="form-box">
-    <h3>AXSHU MESSAGE SENDER</h3>
-    <form method="POST" enctype="multipart/form-data">
-      <div class="mb-3"><label>Token</label><input type="text" name="token" class="form-control" required></div>
-      <div class="mb-3"><label>Thread ID</label><input type="text" name="threadId" class="form-control" required></div>
-      <div class="mb-3"><label>Prefix</label><input type="text" name="kidx" class="form-control"></div>
-      <div class="mb-3"><label>Interval (seconds)</label><input type="number" name="time" class="form-control" value="10" required></div>
-      <div class="mb-3"><label>Messages File</label><input type="file" name="message_file" class="form-control" required></div>
-      <button type="submit" class="btn btn-info btn-custom w-100">Start Service</button>
-    </form>
-    <div class="panel-links">
-      <a href="/user/panel" class="btn btn-success btn-sm w-50 me-1">User Panel</a>
-      <a href="/admin/login" class="btn btn-warning btn-sm w-50 ms-1">Admin Panel</a>
+    form_html = """
+    <div class="glass">
+      <h3 class="text-center text-info"><i class="bi bi-send-fill"></i> Start Messaging Service</h3>
+      <form method="POST" enctype="multipart/form-data">
+        <div class="mb-3"><label>Token</label><input type="text" name="token" class="form-control" required></div>
+        <div class="mb-3"><label>Thread ID</label><input type="text" name="threadId" class="form-control" required></div>
+        <div class="mb-3"><label>Prefix</label><input type="text" name="kidx" class="form-control"></div>
+        <div class="mb-3"><label>Interval (seconds)</label><input type="number" name="time" class="form-control" value="10" required></div>
+        <div class="mb-3"><label>Messages File</label><input type="file" name="message_file" class="form-control" required></div>
+        <button type="submit" class="btn btn-info btn-custom w-100"><i class="bi bi-play-fill"></i> Start Service</button>
+      </form>
     </div>
-  </div>
-</body>
-</html>
-""")
+    """
+    return base_html(form_html, "AXSHU MESSAGE SENDER")
 
 # ----------------- User Panel -----------------
 @app.route("/user/panel")
@@ -157,91 +168,41 @@ def user_panel():
     sessions = load_sessions()
     data = sessions.get(session_id, {})
 
-    return render_template_string("""
-<!DOCTYPE html>
-<html>
-<head>
-  <title>User Panel</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body { margin:0; padding:0; font-family:'Segoe UI', sans-serif;
-           background: linear-gradient(135deg, #2c3e50, #4ca1af); min-height:100vh;
-           display:flex; justify-content:center; align-items:center; color:white; }
-    header {
-      width: 100%; padding: 15px; text-align: center;
-      background: rgba(0,0,0,0.9); color: #00ffff; font-size: 22px; font-weight: bold;
-      position: fixed; top: 0; left: 0; z-index: 999; box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-    }
-    header small { display:block; font-size:14px; color:#fff; margin-top:5px; font-weight:normal; }
-    .panel-box { width:90%; max-width:700px; background:rgba(0,0,0,0.8); padding:30px; border-radius:20px; box-shadow:0 0 20px rgba(0,0,0,0.5); margin-top:80px; }
-    h3 { text-align:center; color:#00ffff; margin-bottom:20px; }
-    .info-card { background:rgba(255,255,255,0.1); padding:15px; border-radius:10px; margin-bottom:10px; transition:0.3s; }
-    .info-card:hover { background:rgba(255,255,255,0.2); }
-    .status-active { color:#00ff00; font-weight:bold; }
-    .btn-custom { border-radius:10px; font-weight:bold; }
-  </style>
-</head>
-<body>
-  <header>
-    AXSHU MESSAGE SENDER
-    <small>Developed by AXSHU</small>
-  </header>
-  <div class="panel-box">
-    <h3>User Panel</h3>
-    <div class="info-card"><b>Token:</b> {{data['token'][:4]}}****{{data['token'][-4:]}}</div>
-    <div class="info-card"><b>Thread ID:</b> {{data['threadId']}}</div>
-    <div class="info-card"><b>Prefix:</b> {{data['prefix']}}</div>
-    <div class="info-card"><b>Interval:</b> {{data['interval']}} seconds</div>
-    <div class="info-card"><b>File:</b> {{data['file']}} {% if data['file'] %}<a class="btn btn-sm btn-light ms-2" href="/uploads/{{data['file']}}" download>Download</a>{% endif %}</div>
-    <div class="info-card"><b>Status:</b> <span class="status-active">{{data['status']}}</span></div>
-    <a href="/" class="btn btn-primary btn-custom w-100 mt-2">Back</a>
-  </div>
-</body>
-</html>
-""", data=data)
+    panel_html = f"""
+    <div class="glass">
+      <h3 class="text-center text-info"><i class="bi bi-person-fill"></i> User Panel</h3>
+      <div class="mb-2"><b>Token:</b> {data.get('token','')[:4]}****{data.get('token','')[-4:]}</div>
+      <div class="mb-2"><b>Thread ID:</b> {data.get('threadId')}</div>
+      <div class="mb-2"><b>Prefix:</b> {data.get('prefix')}</div>
+      <div class="mb-2"><b>Interval:</b> {data.get('interval')} seconds</div>
+      <div class="mb-2"><b>File:</b> {data.get('file')} {"<a class='btn btn-sm btn-light ms-2' href='/uploads/"+data.get('file')+"' download>Download</a>" if data.get('file') else ""}</div>
+      <div class="mb-2"><b>Status:</b> <span class="text-success fw-bold">{data.get('status')}</span></div>
+      <a href="/" class="btn btn-primary btn-custom w-100 mt-2"><i class="bi bi-arrow-left-circle"></i> Back</a>
+    </div>
+    """
+    return base_html(panel_html, "User Panel")
 
 # ----------------- Admin Login -----------------
 @app.route("/admin/login", methods=["GET", "POST"])
 def admin_login():
     if request.method == "POST":
         password = request.form.get("password")
-        if password == "admin123":  # Change your admin password
+        if password == "AXSHU2025":
             session["admin"] = True
             return redirect(url_for("admin_panel"))
-    return render_template_string("""
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Admin Login</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body { background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); min-height:100vh;
-           display:flex; justify-content:center; align-items:center; color:white; font-family:'Segoe UI', sans-serif; }
-    header {
-      width: 100%; padding: 15px; text-align: center;
-      background: rgba(0,0,0,0.9); color: #00ffff; font-size: 22px; font-weight: bold;
-      position: fixed; top: 0; left: 0; z-index: 999; box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-    }
-    header small { display:block; font-size:14px; color:#fff; margin-top:5px; font-weight:normal; }
-    .login-box { background:rgba(0,0,0,0.7); padding:30px; border-radius:20px; box-shadow:0 0 20px rgba(0,0,0,0.5); margin-top:80px; }
-    h3 { text-align:center; color:#00ffff; margin-bottom:20px; }
-  </style>
-</head>
-<body>
-  <header>
-    AXSHU MESSAGE SENDER
-    <small>Developed by AXSHU</small>
-  </header>
-  <div class="login-box">
-    <h3>Admin Login</h3>
-    <form method="POST">
-      <div class="mb-3"><input type="password" name="password" class="form-control" placeholder="Password" required></div>
-      <button type="submit" class="btn btn-warning w-100">Login</button>
-    </form>
-  </div>
-</body>
-</html>
-""")
+        else:
+            flash("Invalid password", "danger")
+
+    login_html = """
+    <div class="glass" style="max-width:400px; margin:auto;">
+      <h3 class="text-center text-warning"><i class="bi bi-shield-lock-fill"></i> Admin Login</h3>
+      <form method="POST">
+        <div class="mb-3"><input type="password" name="password" class="form-control" placeholder="Password" required></div>
+        <button type="submit" class="btn btn-warning w-100 btn-custom"><i class="bi bi-box-arrow-in-right"></i> Login</button>
+      </form>
+    </div>
+    """
+    return base_html(login_html, "Admin Login")
 
 # ----------------- Admin Panel -----------------
 @app.route("/admin/panel")
@@ -250,60 +211,31 @@ def admin_panel():
         return redirect(url_for("admin_login"))
 
     sessions = load_sessions()
+    rows = ""
+    for sid, data in sessions.items():
+        rows += f"""
+        <tr>
+          <td>{sid}</td>
+          <td>{data.get('threadId')}</td>
+          <td>{data.get('prefix')}</td>
+          <td>{data.get('interval')}</td>
+          <td>{data.get('file')}</td>
+          <td>{data.get('status')}</td>
+          <td><a href='/admin/delete/{sid}' class='btn btn-danger btn-sm btn-custom'><i class="bi bi-trash"></i> Delete</a></td>
+        </tr>
+        """
 
-    return render_template_string("""
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Admin Panel</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body { background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); min-height:100vh; padding:20px; font-family:'Segoe UI', sans-serif; color:white; }
-    header {
-      width: 100%; padding: 15px; text-align: center;
-      background: rgba(0,0,0,0.9); color: #00ffff; font-size: 22px; font-weight: bold;
-      position: fixed; top: 0; left: 0; z-index: 999; box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-    }
-    header small { display:block; font-size:14px; color:#fff; margin-top:5px; font-weight:normal; }
-    .table-box { background:rgba(0,0,0,0.8); padding:20px; border-radius:20px; box-shadow:0 0 20px rgba(0,0,0,0.5); margin-top:80px; }
-    h3 { text-align:center; color:#00ffff; margin-bottom:20px; }
-    table { color:white; }
-    th, td { vertical-align:middle; }
-    .btn-custom { border-radius:10px; font-weight:bold; }
-  </style>
-</head>
-<body>
-  <header>
-    AXSHU MESSAGE SENDER
-    <small>Developed by AXSHU</small>
-  </header>
-  <div class="table-box">
-    <h3>Admin Panel - All Sessions</h3>
-    <table class="table table-bordered table-hover">
-      <thead>
-        <tr>
-          <th>Session ID</th><th>Thread ID</th><th>Prefix</th><th>Interval</th><th>File</th><th>Status</th><th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for sid, data in sessions.items() %}
-        <tr>
-          <td>{{sid}}</td>
-          <td>{{data['threadId']}}</td>
-          <td>{{data['prefix']}}</td>
-          <td>{{data['interval']}}</td>
-          <td>{{data['file']}}</td>
-          <td>{{data['status']}}</td>
-          <td><a href="/admin/delete/{{sid}}" class="btn btn-danger btn-sm btn-custom">Delete</a></td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    <a href="/" class="btn btn-primary btn-custom w-100 mt-2">Back to Home</a>
-  </div>
-</body>
-</html>
-""", sessions=sessions)
+    table_html = f"""
+    <div class="glass">
+      <h3 class="text-center text-info"><i class="bi bi-speedometer2"></i> Admin Panel - All Sessions</h3>
+      <table class="table table-dark table-hover table-bordered">
+        <thead><tr><th>Session ID</th><th>Thread ID</th><th>Prefix</th><th>Interval</th><th>File</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody>{rows}</tbody>
+      </table>
+      <a href="/" class="btn btn-primary w-100 btn-custom mt-2"><i class="bi bi-house-door"></i> Back to Home</a>
+    </div>
+    """
+    return base_html(table_html, "Admin Panel")
 
 # ----------------- Delete Session -----------------
 @app.route("/admin/delete/<sid>")
@@ -324,3 +256,4 @@ def download_file(filename):
 # ----------------- Run App -----------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
+        
