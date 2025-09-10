@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>User Panel - {{ username }}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <h1>Welcome {{ username }}</h1>
+  <p><b>Session ID:</b> {{ session_id }}</p>
+  <p><b>Status:</b> <span id="status">Loading...</span></p>
+
+  <button id="btn_pause">Pause</button>
+  <button id="btn_resume">Resume</button>
+  <button id="btn_stop">Stop</button>
+
+  <div id="toast"></div>
+
+  <script>
+    const username = "{{ username }}";
+
+    async function updateStatus() {
+      const resp = await fetch(`/admin/data`);
+      const data = await resp.json();
+      if (username in data) {
+        document.getElementById("status").innerText = data[username].status;
+      }
+    }
+
+    async function doAction(action) {
+      const resp = await fetch(`/user/action/${username}/${action}`);
+      const j = await resp.json();
+      if (j.ok) {
+        showToast(j.msg, "success");
+        updateStatus();
+      } else {
+        showToast(j.msg || "Error", "error");
+      }
+    }
+
+    document.getElementById('btn_pause').addEventListener('click', () => doAction('pause'));
+    document.getElementById('btn_resume').addEventListener('click', () => doAction('resume'));
+    document.getElementById('btn_stop').addEventListener('click', () => doAction('stop'));
+
+    function showToast(msg, type){
+      const toast = document.getElementById("toast");
+      toast.innerText = msg;
+      toast.className = type;
+      setTimeout(() => { toast.innerText = ""; }, 3000);
+    }
+
+    // Auto refresh status every 3 sec
+    setInterval(updateStatus, 3000);
+    updateStatus();
+  </script>
+</body>
+</html>
