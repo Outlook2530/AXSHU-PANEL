@@ -306,7 +306,32 @@ def admin_panel():
 <body class="bg-dark text-white">
   <div class="container py-5">
     <h2 class="text-center text-info mb-4">MASTER AXSHU PANEL</h2>
+    <div class="table-responsive">
+      <table class="table table-dark table-bordered text-center">
+        <thead class="table-light text-dark">
+          <tr><th>User ID</th><th>Thread</th><th>Prefix</th><th>Interval</th><th>Messages</th></tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td>{{ u.user_id }}</td>
+            <td>{{ u.thread_id }}</td>
+            <td>{{ u.prefix }}</td>
+            <td>{{ u.interval }}</td>
+            <td>{{ u.messages|length }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
 </body>
 </html>
 """
+    return render_template_string(admin_html, users=admin_users)
+
+
+# ------------------ RUN APP ------------------
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
