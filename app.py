@@ -352,20 +352,24 @@ def user_panel():
       <a href="/" class="btn btn-primary btn-custom w-100 mt-2"><i class="bi bi-arrow-left-circle"></i> Back</a>
     </div>
 
-    <script>
-      const sessionId = "{session_id}";
-      async function doAction(action){
-        const resp = await fetch(`/user/action/${action}`);
-        const j = await resp.json();
-        if(j.ok) {{
-          showToast(j.msg, "success");
-        }} else {{
-          showToast(j.msg || "Error", "error");
-        }}
-      }
-      document.getElementById('btn_pause').addEventListener('click', ()=>doAction('pause'));
-      document.getElementById('btn_resume').addEventListener('click', ()=>doAction('resume'));
-      document.getElementById('btn_stop').addEventListener('click', ()=>doAction('stop'));
+    script_html = """
+<script>
+  const sessionId = "{session_id}";
+  async function doAction(action){
+    const resp = await fetch(`/user/action/${action}`);
+    const j = await resp.json();
+    if(j.ok) {
+      showToast(j.msg, "success");
+    } else {
+      showToast(j.msg || "Error", "error");
+    }
+  }
+
+  document.getElementById('btn_pause').addEventListener('click', () => doAction('pause'));
+  document.getElementById('btn_resume').addEventListener('click', () => doAction('resume'));
+  document.getElementById('btn_stop').addEventListener('click', () => doAction('stop'));
+</script>
+"""
 
       // Poll status & logs every 3 seconds
       async function poll(){
