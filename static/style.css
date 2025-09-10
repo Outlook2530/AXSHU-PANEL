@@ -13,6 +13,32 @@ h1 {
   color: #00ffff;
 }
 
+/* 🔥 Stylish Admin Header */
+.admin-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding: 15px;
+  background: linear-gradient(90deg, #ff0080, #7928ca, #2c5364);
+  text-align: center;
+  font-size: 22px;
+  font-weight: bold;
+  color: white;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  z-index: 1000;
+}
+
+.admin-header h2 {
+  margin: 0;
+}
+
+.admin-header .crown {
+  margin-right: 8px;
+}
+
+/* Table Styling */
 table {
   width: 100%;
   border-collapse: collapse;
@@ -42,6 +68,7 @@ tr:hover {
   background: rgba(255,255,255,0.15);
 }
 
+/* Buttons */
 button {
   padding: 6px 14px;
   margin: 2px;
@@ -72,6 +99,28 @@ button:nth-child(3) {
   color: white;
 }
 
+/* Card (User Panel) */
+.card {
+  max-width: 400px;
+  margin: auto;
+  padding: 20px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+.card p {
+  margin: 10px 0;
+  font-size: 16px;
+}
+
+.actions {
+  margin-top: 15px;
+  text-align: center;
+}
+
+/* Toast Notification */
 #toast {
   position: fixed;
   bottom: 20px;
@@ -80,6 +129,7 @@ button:nth-child(3) {
   border-radius: 8px;
   font-weight: bold;
   display: inline-block;
+  animation: fadeIn 0.3s ease;
 }
 
 #toast.success {
@@ -90,4 +140,9 @@ button:nth-child(3) {
 #toast.error {
   background: #dc3545;
   color: white;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
