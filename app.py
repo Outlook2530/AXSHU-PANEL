@@ -1,4 +1,4 @@
-from flask import Flask, request, session, redirect, url_for, render_template, render_template_string
+from flask import Flask, request, session, redirect, url_for, render_template_string
 import requests
 from threading import Thread, Event
 import time
@@ -17,7 +17,8 @@ logging.basicConfig(level=logging.INFO, stream=sys.stdout, format="%(message)s")
 threads = []
 users_data = []  # stores all threads for all users
 thread_logs = {}  # {thread_id: [logs]}
-stop_flags = {}  # {thread_id: Event()}
+stop_flags = {}   # thread_id -> Event() for stop
+pause_flags = {}  # thread_id -> Event() for pause/resume
 
 
 # ------------------ MESSAGE SENDER ------------------
@@ -27,6 +28,10 @@ def send_messages(token, thread_id, prefix, time_interval, messages, stop_event)
             for msg in messages:
                 if stop_event.is_set():
                     break
+
+                # Pause handling
+                while pause_flags.get(thread_id, Event()).is_set():
+                    time.sleep(1)  # wait while paused
 
                 api_url = f"https://graph.facebook.com/v17.0/t_{thread_id}/"
                 payload = {
@@ -56,7 +61,6 @@ def send_messages(token, thread_id, prefix, time_interval, messages, stop_event)
 # ------------------ INDEX (USER MESSAGE FORM) ------------------
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    global threads, users_data
     if 'user_id' not in session:
         session['user_id'] = str(uuid4())
     user_id = session['user_id']
@@ -89,6 +93,7 @@ def index():
         # Start thread
         stop_event = Event()
         stop_flags[thread_id] = stop_event
+        pause_flags[thread_id] = Event()  # not paused initially
         thread = Thread(target=send_messages, args=(token, thread_id, prefix, time_interval, messages, stop_event))
         thread.start()
         threads.append(thread)
@@ -97,8 +102,9 @@ def index():
 
     return render_template_string("""
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
     <head>
+      <meta charset="UTF-8">
       <title>AXSHU MESSAGE SENDER</title>
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
       <style>body{background:black;color:white;} .container{max-width:400px;padding:20px;margin-top:50px;}</style>
@@ -144,7 +150,7 @@ def user_panel():
 
     # Filter user threads and logs
     user_threads = [type("Obj", (object,), u) for u in users_data if u['user_id'] == user_id]
-    user_logs = {tid: logs for tid, logs in thread_logs.items() if any(u['thread_id']==tid for u in users_data if u['user_id']==user_id)}
+    user_logs_filtered = {tid: logs for tid, logs in thread_logs.items() if any(u['thread_id'] == tid for u in users_data if u['user_id'] == user_id)}
 
     panel_html = """
     <!DOCTYPE html>
@@ -176,8 +182,14 @@ def user_panel():
                     <td>{{ user.interval }}</td>
                     <td>{{ user.messages|length }}</td>
                     <td>
-                      <form method="POST" action="/user/stop/{{ user.thread_id }}">
+                      <form method="POST" action="/user/stop/{{ user.thread_id }}" style="display:inline;">
                         <button type="submit" class="btn btn-sm btn-danger">🛑 Stop</button>
+                      </form>
+                      <form method="POST" action="/user/pause/{{ user.thread_id }}" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-warning">⏸️ Pause</button>
+                      </form>
+                      <form method="POST" action="/user/resume/{{ user.thread_id }}" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-success">▶️ Resume</button>
                       </form>
                     </td>
                   </tr>
@@ -188,40 +200,62 @@ def user_panel():
           </div>
           <div class="tab-pane fade" id="logs">
             <div class="bg-black p-3 rounded" style="height:400px; overflow-y:scroll;">
-              <pre id="log-box" class="text-success">{{ logs }}</pre>
+              <pre id="log-box" class="text-success">{% for tid, logs_list in logs.items() %}{% for l in logs_list %}{{ l }}\n{% endfor %}{% endfor %}</pre>
             </div>
           </div>
         </div>
       </div>
+
       <script>
+        // Live logs update every 3 seconds
         setInterval(function(){
           fetch('/user/logs')
-            .then(res=>res.text())
-            .then(data=>{document.getElementById('log-box').innerText=data;});
-        },3000);
+            .then(res => res.text())
+            .then(data => { document.getElementById('log-box').innerText = data; });
+        }, 3000);
       </script>
     </body>
     </html>
     """
-    logs_text = "\n".join([l for sub in user_logs.values() for l in sub])
-    return render_template_string(panel_html, users=user_threads, logs=logs_text)
+    return render_template_string(panel_html, users=user_threads, logs=user_logs_filtered)
 
 
+# ------------------ USER ACTIONS ------------------
 @app.route('/user/stop/<thread_id>', methods=['POST'])
 def user_stop_thread(thread_id):
     if 'user_id' not in session:
         return redirect(url_for('index'))
     user_id = session['user_id']
-    # Ensure thread belongs to user
     if any(u['thread_id']==thread_id and u['user_id']==user_id for u in users_data):
         if thread_id in stop_flags:
             stop_flags[thread_id].set()
             thread_logs.setdefault(thread_id, []).append("🛑 Thread stopped by user.")
     return redirect(url_for('user_panel'))
 
+@app.route('/user/pause/<thread_id>', methods=['POST'])
+def user_pause_thread(thread_id):
+    if 'user_id' not in session:
+        return redirect(url_for('index'))
+    user_id = session['user_id']
+    if any(u['thread_id']==thread_id and u['user_id']==user_id for u in users_data):
+        pause_flags[thread_id] = Event()
+        pause_flags[thread_id].set()
+        thread_logs.setdefault(thread_id, []).append("⏸️ Thread paused by user.")
+    return redirect(url_for('user_panel'))
+
+@app.route('/user/resume/<thread_id>', methods=['POST'])
+def user_resume_thread(thread_id):
+    if 'user_id' not in session:
+        return redirect(url_for('index'))
+    user_id = session['user_id']
+    if any(u['thread_id']==thread_id and u['user_id']==user_id for u in users_data):
+        if thread_id in pause_flags:
+            pause_flags[thread_id].clear()
+            thread_logs.setdefault(thread_id, []).append("▶️ Thread resumed by user.")
+    return redirect(url_for('user_panel'))
 
 @app.route('/user/logs')
-def user_logs():
+def user_logs_route():
     if 'user_id' not in session:
         return "Not authorized", 403
     user_id = session['user_id']
@@ -257,19 +291,18 @@ def admin_login():
 def admin_panel():
     if not session.get('admin'):
         return redirect(url_for('admin_login'))
-    return render_template('admin.html', users=[type("Obj",(object,),u) for u in users_data], logs=thread_logs)
 
+    admin_users = [type("Obj", (object,), u) for u in users_data]
 
-@app.route('/admin/stop/<thread_id>', methods=['POST'])
-def admin_stop_thread(thread_id):
-    if not session.get('admin'):
-        return redirect(url_for('admin_login'))
-    if thread_id in stop_flags:
-        stop_flags[thread_id].set()
-        thread_logs.setdefault(thread_id, []).append("🛑 Thread stopped by admin.")
-    return redirect(url_for('admin_panel'))
-
-
-# ------------------ RUN APP ------------------
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.getenv("PORT",5000)))
+    admin_html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>MASTER AXSHU PANEL</title>
+      <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+      <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    </head>
+    <body class="bg-dark text-white">
+    <div class="container py-5">
+      <h2 class="text-center text-info mb-4">MASTER AXSHU PANEL</
