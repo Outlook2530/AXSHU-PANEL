@@ -1,0 +1,93 @@
+body {
+  margin: 0;
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+  color: white;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #00ffff;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(8px);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+th, td {
+  padding: 12px;
+  text-align: center;
+}
+
+th {
+  background: rgba(0,0,0,0.6);
+  color: #00ffff;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+tr:nth-child(even) {
+  background: rgba(255,255,255,0.08);
+}
+
+tr:hover {
+  background: rgba(255,255,255,0.15);
+}
+
+button {
+  padding: 6px 14px;
+  margin: 2px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+button:hover {
+  transform: scale(1.05);
+  opacity: 0.9;
+}
+
+button:nth-child(1) {
+  background: #ffc107;
+  color: black;
+}
+
+button:nth-child(2) {
+  background: #28a745;
+  color: white;
+}
+
+button:nth-child(3) {
+  background: #dc3545;
+  color: white;
+}
+
+#toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  display: inline-block;
+}
+
+#toast.success {
+  background: #28a745;
+  color: white;
+}
+
+#toast.error {
+  background: #dc3545;
+  color: white;
+}
