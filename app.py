@@ -61,28 +61,73 @@ def index():
   <title>AXSHU MESSAGE SENDER</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    body {
-      margin:0; padding:0;
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
       font-family: 'Segoe UI', sans-serif;
       background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-      min-height:100vh;
-      display:flex; justify-content:center; align-items:center;
-      color:white;
+      color: white;
+    }
+    header {
+      width: 100%;
+      padding: 15px;
+      text-align: center;
+      background: rgba(0,0,0,0.9);
+      color: #00ffff;
+      font-size: 22px;
+      font-weight: bold;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 999;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+    header small {
+      display: block;
+      font-size: 14px;
+      color: #fff;
+      margin-top: 5px;
+      font-weight: normal;
     }
     .form-box {
-      width:100%; max-width:600px;
-      background: rgba(0,0,0,0.7);
-      padding:30px;
-      border-radius:20px;
-      box-shadow:0 0 20px rgba(0,0,0,0.8);
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      padding: 50px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
-    h3 { text-align:center; margin-bottom:20px; color: #00ffff; font-weight:bold; }
+    h3 { text-align:center; margin-bottom:30px; color: #00ffff; font-weight:bold; font-size:28px; }
     .btn-custom { font-weight:bold; border-radius:10px; transition:0.3s; }
     .btn-custom:hover { transform:scale(1.05); }
-    .panel-links { margin-top:15px; display:flex; justify-content:space-between; }
+    .panel-links { margin-top:20px; display:flex; justify-content:space-between; }
+
+    /* Responsive Adjustments */
+    @media (max-width: 768px) {
+      .form-box { padding: 20px; }
+      h3 { font-size: 22px; margin-top: 40px; }
+      input, button, label { font-size: 16px; }
+      .btn-custom { font-size: 16px; padding: 12px; }
+    }
+
+    @media (max-width: 480px) {
+      h3 { font-size: 20px; margin-top: 50px; }
+      input, button, label { font-size: 14px; }
+      .btn-custom { font-size: 14px; padding: 10px; }
+      .panel-links { flex-direction: column; }
+      .panel-links a { width: 100% !important; margin: 5px 0; }
+    }
   </style>
 </head>
 <body>
+  <header>
+    AXSHU MESSAGE SENDER
+    <small>Developed by AXSHU</small>
+  </header>
   <div class="form-box">
     <h3>AXSHU MESSAGE SENDER</h3>
     <form method="POST" enctype="multipart/form-data">
@@ -122,7 +167,13 @@ def user_panel():
     body { margin:0; padding:0; font-family:'Segoe UI', sans-serif;
            background: linear-gradient(135deg, #2c3e50, #4ca1af); min-height:100vh;
            display:flex; justify-content:center; align-items:center; color:white; }
-    .panel-box { width:90%; max-width:700px; background:rgba(0,0,0,0.8); padding:30px; border-radius:20px; box-shadow:0 0 20px rgba(0,0,0,0.5);}
+    header {
+      width: 100%; padding: 15px; text-align: center;
+      background: rgba(0,0,0,0.9); color: #00ffff; font-size: 22px; font-weight: bold;
+      position: fixed; top: 0; left: 0; z-index: 999; box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+    header small { display:block; font-size:14px; color:#fff; margin-top:5px; font-weight:normal; }
+    .panel-box { width:90%; max-width:700px; background:rgba(0,0,0,0.8); padding:30px; border-radius:20px; box-shadow:0 0 20px rgba(0,0,0,0.5); margin-top:80px; }
     h3 { text-align:center; color:#00ffff; margin-bottom:20px; }
     .info-card { background:rgba(255,255,255,0.1); padding:15px; border-radius:10px; margin-bottom:10px; transition:0.3s; }
     .info-card:hover { background:rgba(255,255,255,0.2); }
@@ -131,6 +182,10 @@ def user_panel():
   </style>
 </head>
 <body>
+  <header>
+    AXSHU MESSAGE SENDER
+    <small>Developed by AXSHU</small>
+  </header>
   <div class="panel-box">
     <h3>User Panel</h3>
     <div class="info-card"><b>Token:</b> {{data['token'][:4]}}****{{data['token'][-4:]}}</div>
@@ -162,11 +217,21 @@ def admin_login():
   <style>
     body { background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); min-height:100vh;
            display:flex; justify-content:center; align-items:center; color:white; font-family:'Segoe UI', sans-serif; }
-    .login-box { background:rgba(0,0,0,0.7); padding:30px; border-radius:20px; box-shadow:0 0 20px rgba(0,0,0,0.5);}
+    header {
+      width: 100%; padding: 15px; text-align: center;
+      background: rgba(0,0,0,0.9); color: #00ffff; font-size: 22px; font-weight: bold;
+      position: fixed; top: 0; left: 0; z-index: 999; box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+    header small { display:block; font-size:14px; color:#fff; margin-top:5px; font-weight:normal; }
+    .login-box { background:rgba(0,0,0,0.7); padding:30px; border-radius:20px; box-shadow:0 0 20px rgba(0,0,0,0.5); margin-top:80px; }
     h3 { text-align:center; color:#00ffff; margin-bottom:20px; }
   </style>
 </head>
 <body>
+  <header>
+    AXSHU MESSAGE SENDER
+    <small>Developed by AXSHU</small>
+  </header>
   <div class="login-box">
     <h3>Admin Login</h3>
     <form method="POST">
@@ -194,7 +259,13 @@ def admin_panel():
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body { background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); min-height:100vh; padding:20px; font-family:'Segoe UI', sans-serif; color:white; }
-    .table-box { background:rgba(0,0,0,0.8); padding:20px; border-radius:20px; box-shadow:0 0 20px rgba(0,0,0,0.5);}
+    header {
+      width: 100%; padding: 15px; text-align: center;
+      background: rgba(0,0,0,0.9); color: #00ffff; font-size: 22px; font-weight: bold;
+      position: fixed; top: 0; left: 0; z-index: 999; box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+    header small { display:block; font-size:14px; color:#fff; margin-top:5px; font-weight:normal; }
+    .table-box { background:rgba(0,0,0,0.8); padding:20px; border-radius:20px; box-shadow:0 0 20px rgba(0,0,0,0.5); margin-top:80px; }
     h3 { text-align:center; color:#00ffff; margin-bottom:20px; }
     table { color:white; }
     th, td { vertical-align:middle; }
@@ -202,6 +273,10 @@ def admin_panel():
   </style>
 </head>
 <body>
+  <header>
+    AXSHU MESSAGE SENDER
+    <small>Developed by AXSHU</small>
+  </header>
   <div class="table-box">
     <h3>Admin Panel - All Sessions</h3>
     <table class="table table-bordered table-hover">
