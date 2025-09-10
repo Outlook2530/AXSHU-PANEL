@@ -5,3 +5,5 @@ gunicorn
 flask
 requests
 gunicorn
+flask
+werkzeug
