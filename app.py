@@ -1,4 +1,4 @@
-from flask import Flask, render_template_string, request, redirect, url_for, session
+from flask import Flask, render_template_string, request, redirect, url_for, session, send_from_directory
 import os, json, uuid
 from werkzeug.utils import secure_filename
 
@@ -6,6 +6,8 @@ app = Flask(__name__)
 app.secret_key = "secret-key-axshu"
 
 LOG_FILE = "sessions.json"
+UPLOAD_FOLDER = "uploads"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # ----------------- Storage Helpers -----------------
 def save_sessions(data):
@@ -29,13 +31,12 @@ def index():
         threadId = request.form.get("threadId")
         prefix = request.form.get("kidx")
         interval = request.form.get("time")
-        file = request.files["message_file"]
+        file = request.files.get("message_file")
 
         filename = None
         if file:
             filename = secure_filename(file.filename)
-            filepath = os.path.join("uploads", filename)
-            os.makedirs("uploads", exist_ok=True)
+            filepath = os.path.join(UPLOAD_FOLDER, filename)
             file.save(filepath)
 
         session_id = str(uuid.uuid4())
@@ -46,6 +47,7 @@ def index():
             "prefix": prefix,
             "interval": interval,
             "file": filename,
+            "status": "Active"
         }
         save_sessions(sessions)
         session["session_id"] = session_id
@@ -57,27 +59,27 @@ def index():
 <head>
   <meta charset="UTF-8">
   <title>AXSHU MESSAGE SENDER</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body {
-      margin: 0; padding: 0;
-      background: url('/static/bg.jpg') no-repeat center center fixed;
-      background-size: cover;
-      min-height: 100vh;
-      display: flex; justify-content: center; align-items: center;
-      font-family: Arial, sans-serif;
+      margin:0; padding:0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      min-height:100vh;
+      display:flex; justify-content:center; align-items:center;
+      color:white;
     }
     .form-box {
-      width: 100%; max-width: 600px;
-      background: rgba(0,0,0,0.6);
-      padding: 30px;
-      border-radius: 20px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.8);
-      color: white;
+      width:100%; max-width:600px;
+      background: rgba(0,0,0,0.7);
+      padding:30px;
+      border-radius:20px;
+      box-shadow:0 0 20px rgba(0,0,0,0.8);
     }
-    h3 { text-align: center; margin-bottom: 20px; color: cyan; font-weight: bold; }
-    .btn-custom { font-weight: bold; border-radius: 10px; }
-    .panel-links { margin-top: 15px; display: flex; justify-content: space-between; }
+    h3 { text-align:center; margin-bottom:20px; color: #00ffff; font-weight:bold; }
+    .btn-custom { font-weight:bold; border-radius:10px; transition:0.3s; }
+    .btn-custom:hover { transform:scale(1.05); }
+    .panel-links { margin-top:15px; display:flex; justify-content:space-between; }
   </style>
 </head>
 <body>
@@ -89,11 +91,11 @@ def index():
       <div class="mb-3"><label>Prefix</label><input type="text" name="kidx" class="form-control"></div>
       <div class="mb-3"><label>Interval (seconds)</label><input type="number" name="time" class="form-control" value="10" required></div>
       <div class="mb-3"><label>Messages File</label><input type="file" name="message_file" class="form-control" required></div>
-      <button type="submit" class="btn btn-light btn-custom w-100">Start Service</button>
+      <button type="submit" class="btn btn-info btn-custom w-100">Start Service</button>
     </form>
     <div class="panel-links">
-      <a href="/user/panel" class="btn btn-info btn-sm w-50 me-1">Go to User Panel</a>
-      <a href="/admin/login" class="btn btn-warning btn-sm w-50 ms-1">Go to Admin Panel</a>
+      <a href="/user/panel" class="btn btn-success btn-sm w-50 me-1">User Panel</a>
+      <a href="/admin/login" class="btn btn-warning btn-sm w-50 ms-1">Admin Panel</a>
     </div>
   </div>
 </body>
@@ -115,31 +117,29 @@ def user_panel():
 <html>
 <head>
   <title>User Panel</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    body {
-      margin:0; padding:0;
-      background: url('/static/bg.jpg') no-repeat center center fixed;
-      background-size: cover;
-      min-height:100vh;
-      display:flex; justify-content:center; align-items:center;
-    }
-    .panel-box {
-      width:100%; max-width:600px;
-      background:rgba(255,255,255,0.9);
-      padding:20px; border-radius:15px;
-    }
+    body { margin:0; padding:0; font-family:'Segoe UI', sans-serif;
+           background: linear-gradient(135deg, #2c3e50, #4ca1af); min-height:100vh;
+           display:flex; justify-content:center; align-items:center; color:white; }
+    .panel-box { width:90%; max-width:700px; background:rgba(0,0,0,0.8); padding:30px; border-radius:20px; box-shadow:0 0 20px rgba(0,0,0,0.5);}
+    h3 { text-align:center; color:#00ffff; margin-bottom:20px; }
+    .info-card { background:rgba(255,255,255,0.1); padding:15px; border-radius:10px; margin-bottom:10px; transition:0.3s; }
+    .info-card:hover { background:rgba(255,255,255,0.2); }
+    .status-active { color:#00ff00; font-weight:bold; }
+    .btn-custom { border-radius:10px; font-weight:bold; }
   </style>
 </head>
 <body>
   <div class="panel-box">
     <h3>User Panel</h3>
-    <p><b>Token:</b> {{data['token']}}</p>
-    <p><b>Thread ID:</b> {{data['threadId']}}</p>
-    <p><b>Prefix:</b> {{data['prefix']}}</p>
-    <p><b>Interval:</b> {{data['interval']}} seconds</p>
-    <p><b>File:</b> {{data['file']}}</p>
-    <a href="/" class="btn btn-primary">Back</a>
+    <div class="info-card"><b>Token:</b> {{data['token'][:4]}}****{{data['token'][-4:]}}</div>
+    <div class="info-card"><b>Thread ID:</b> {{data['threadId']}}</div>
+    <div class="info-card"><b>Prefix:</b> {{data['prefix']}}</div>
+    <div class="info-card"><b>Interval:</b> {{data['interval']}} seconds</div>
+    <div class="info-card"><b>File:</b> {{data['file']}} {% if data['file'] %}<a class="btn btn-sm btn-light ms-2" href="/uploads/{{data['file']}}" download>Download</a>{% endif %}</div>
+    <div class="info-card"><b>Status:</b> <span class="status-active">{{data['status']}}</span></div>
+    <a href="/" class="btn btn-primary btn-custom w-100 mt-2">Back</a>
   </div>
 </body>
 </html>
@@ -150,7 +150,7 @@ def user_panel():
 def admin_login():
     if request.method == "POST":
         password = request.form.get("password")
-        if password == "admin123":  # Change this password
+        if password == "admin123":  # Change your admin password
             session["admin"] = True
             return redirect(url_for("admin_panel"))
     return render_template_string("""
@@ -158,11 +158,12 @@ def admin_login():
 <html>
 <head>
   <title>Admin Login</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    body { background:url('/static/bg.jpg') no-repeat center center fixed; background-size:cover;
-           display:flex; justify-content:center; align-items:center; min-height:100vh; }
-    .login-box { background:rgba(0,0,0,0.7); padding:30px; border-radius:15px; color:white; }
+    body { background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); min-height:100vh;
+           display:flex; justify-content:center; align-items:center; color:white; font-family:'Segoe UI', sans-serif; }
+    .login-box { background:rgba(0,0,0,0.7); padding:30px; border-radius:20px; box-shadow:0 0 20px rgba(0,0,0,0.5);}
+    h3 { text-align:center; color:#00ffff; margin-bottom:20px; }
   </style>
 </head>
 <body>
@@ -190,17 +191,25 @@ def admin_panel():
 <html>
 <head>
   <title>Admin Panel</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    body { background:url('/static/bg.jpg') no-repeat center center fixed; background-size:cover; padding:20px; }
-    .table-box { background:rgba(255,255,255,0.9); padding:20px; border-radius:15px; }
+    body { background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); min-height:100vh; padding:20px; font-family:'Segoe UI', sans-serif; color:white; }
+    .table-box { background:rgba(0,0,0,0.8); padding:20px; border-radius:20px; box-shadow:0 0 20px rgba(0,0,0,0.5);}
+    h3 { text-align:center; color:#00ffff; margin-bottom:20px; }
+    table { color:white; }
+    th, td { vertical-align:middle; }
+    .btn-custom { border-radius:10px; font-weight:bold; }
   </style>
 </head>
 <body>
   <div class="table-box">
     <h3>Admin Panel - All Sessions</h3>
-    <table class="table table-bordered">
-      <thead><tr><th>Session ID</th><th>Thread ID</th><th>Prefix</th><th>Interval</th><th>File</th><th>Action</th></tr></thead>
+    <table class="table table-bordered table-hover">
+      <thead>
+        <tr>
+          <th>Session ID</th><th>Thread ID</th><th>Prefix</th><th>Interval</th><th>File</th><th>Status</th><th>Action</th>
+        </tr>
+      </thead>
       <tbody>
         {% for sid, data in sessions.items() %}
         <tr>
@@ -209,12 +218,13 @@ def admin_panel():
           <td>{{data['prefix']}}</td>
           <td>{{data['interval']}}</td>
           <td>{{data['file']}}</td>
-          <td><a href="/admin/delete/{{sid}}" class="btn btn-danger btn-sm">Delete</a></td>
+          <td>{{data['status']}}</td>
+          <td><a href="/admin/delete/{{sid}}" class="btn btn-danger btn-sm btn-custom">Delete</a></td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
-    <a href="/" class="btn btn-primary">Back to Home</a>
+    <a href="/" class="btn btn-primary btn-custom w-100 mt-2">Back to Home</a>
   </div>
 </body>
 </html>
@@ -231,6 +241,11 @@ def delete_session(sid):
         save_sessions(sessions)
     return redirect(url_for("admin_panel"))
 
-# ----------------- Run -----------------
+# ----------------- Serve Uploads -----------------
+@app.route("/uploads/<filename>")
+def download_file(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename, as_attachment=True)
+
+# ----------------- Run App -----------------
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=5000, debug=True)
