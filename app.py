@@ -295,14 +295,18 @@ def admin_panel():
     admin_users = [type("Obj", (object,), u) for u in users_data]
 
     admin_html = """
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="UTF-8">
-      <title>MASTER AXSHU PANEL</title>
-      <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-      <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    </head>
-    <body class="bg-dark text-white">
-    <div class="container py-5">
-      <h2 class="text-center text-info mb-4">MASTER AXSHU PANEL</
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>MASTER AXSHU PANEL</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<body class="bg-dark text-white">
+  <div class="container py-5">
+    <h2 class="text-center text-info mb-4">MASTER AXSHU PANEL</h2>
+  </div>
+</body>
+</html>
+"""
